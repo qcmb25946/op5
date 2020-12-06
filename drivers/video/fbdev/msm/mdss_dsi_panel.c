@@ -27,6 +27,10 @@
 #include "mdss_dba_utils.h"
 #include "mdss_debug.h"
 
+#ifdef CONFIG_FLICKER_FREE
+#include "flicker_free.h"
+#endif
+
 #include <linux/clk.h>
 #include "mdss_dsi_iris2p_lightup.h"
 #include <linux/project_info.h>
@@ -1068,6 +1072,7 @@ static void mdss_dsi_panel_bl_ctrl(struct mdss_panel_data *pdata,
        pr_debug("%s goto backlight level remap\n", __func__);
        bl_level = backlight_level_remap(ctrl_pdata, bl_level);
     }
+
   //#endif
 	/*
 	 * Some backlight controllers specify a minimum duty cycle
@@ -1083,8 +1088,11 @@ static void mdss_dsi_panel_bl_ctrl(struct mdss_panel_data *pdata,
 	if ((bl_level < pdata->panel_info.bl_min) && (bl_level != 0))
 		bl_level = pdata->panel_info.bl_min;
 
-	/* enable the backlight gpio if present */
-	mdss_dsi_bl_gpio_ctrl(pdata, bl_level);
+#ifdef CONFIG_FLICKER_FREE
+	/* remap backlight value */
+	if (bl_level != 0)
+		bl_level = mdss_panel_calc_backlight(bl_level);
+#endif
 
 	switch (ctrl_pdata->bklt_ctrl) {
 	case BL_WLED:
@@ -1149,6 +1157,7 @@ int mdss_dsi_panel_get_acl_mode(struct mdss_dsi_ctrl_pdata *ctrl)
    return ctrl->acl_mode;
 }
 //#endif
+
 
 int mdss_dsi_panel_set_hbm_mode(struct mdss_dsi_ctrl_pdata *ctrl, int level)
 {
